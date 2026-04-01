@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IT Asset Kiosk</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #f1f5f9; min-height: 100vh; display: flex; flex-direction: column; user-select: none; }
+  .header { text-align: center; padding: 2rem 1rem 1rem; }
+  .header .logo { font-size: 13px; font-weight: 600; letter-spacing: 0.15em; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem; }
+  .header h1 { font-size: 28px; font-weight: 700; color: #f1f5f9; }
+  .screen { display: none; flex: 1; flex-direction: column; padding: 1.5rem; }
+  .screen.active { display: flex; }
+  #screen-home { align-items: center; justify-content: center; gap: 1.5rem; }
+  .home-subtitle { font-size: 16px; color: #94a3b8; margin-bottom: 1rem; }
+  .home-btns { display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; }
+  .home-btn { width: 200px; height: 200px; border-radius: 24px; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; cursor: pointer; font-size: 20px; font-weight: 700; transition: transform 0.12s, opacity 0.12s; }
+  .home-btn:active { transform: scale(0.96); opacity: 0.85; }
+  .home-btn .icon { width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 26px; }
+  .btn-checkout { background: #1e40af; color: #eff6ff; }
+  .btn-checkout .icon { background: #1d4ed8; }
+  .btn-checkin { background: #065f46; color: #ecfdf5; }
+  .btn-checkin .icon { background: #047857; }
+  .step-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+  .back-btn { background: #1e293b; border: none; color: #94a3b8; width: 44px; height: 44px; border-radius: 12px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; }
+  .back-btn:hover { background: #334155; }
+  .step-title { font-size: 22px; font-weight: 700; }
+  .step-subtitle { font-size: 14px; color: #64748b; margin-top: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; flex: 1; align-content: start; }
+  .card-btn { background: #1e293b; border: 1.5px solid #334155; border-radius: 18px; padding: 1.25rem 1rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: background 0.15s, border-color 0.15s, transform 0.1s; }
+  .card-btn:active { transform: scale(0.97); }
+  .card-btn:hover { background: #273549; border-color: #475569; }
+  .card-icon { font-size: 28px; width: 56px; height: 56px; background: #0f172a; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+  .card-name { font-size: 14px; font-weight: 600; color: #e2e8f0; text-align: center; }
+  .card-stock { font-size: 12px; color: #64748b; background: #0f172a; padding: 3px 10px; border-radius: 20px; }
+  .card-stock.low { color: #f59e0b; }
+  .card-stock.out { color: #ef4444; }
+  #screen-confirm { align-items: center; justify-content: center; }
+  .confirm-card { background: #1e293b; border: 1.5px solid #334155; border-radius: 24px; padding: 2rem; max-width: 380px; width: 100%; text-align: center; }
+  .confirm-icon { font-size: 40px; margin-bottom: 1rem; }
+  .confirm-title { font-size: 20px; font-weight: 700; margin-bottom: 0.5rem; }
+  .confirm-detail { font-size: 14px; color: #94a3b8; margin-bottom: 1.5rem; line-height: 1.6; }
+  .confirm-row { display: flex; justify-content: space-between; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #334155; }
+  .confirm-row:last-of-type { border-bottom: none; margin-bottom: 1.5rem; }
+  .confirm-row .label { color: #64748b; }
+  .confirm-row .val { font-weight: 600; color: #e2e8f0; }
+  .confirm-btns { display: flex; gap: 1rem; }
+  .btn-cancel { flex: 1; padding: 14px; background: #0f172a; border: 1.5px solid #334155; color: #94a3b8; border-radius: 14px; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .btn-confirm { flex: 2; padding: 14px; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+  .btn-confirm.checkout-confirm { background: #1d4ed8; color: #eff6ff; }
+  .btn-confirm.checkin-confirm { background: #047857; color: #ecfdf5; }
+  #screen-success { align-items: center; justify-content: center; }
+  .success-wrap { text-align: center; max-width: 340px; }
+  .success-circle { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 44px; margin: 0 auto 1.5rem; }
+  .success-circle.checkout { background: #1e3a5f; }
+  .success-circle.checkin { background: #064e3b; }
+  .success-title { font-size: 24px; font-weight: 700; margin-bottom: 0.5rem; }
+  .success-msg { font-size: 15px; color: #94a3b8; margin-bottom: 2rem; line-height: 1.6; }
+  .done-btn { padding: 16px 48px; border: none; border-radius: 16px; font-size: 17px; font-weight: 700; cursor: pointer; }
+  .done-btn.checkout { background: #1d4ed8; color: #eff6ff; }
+  .done-btn.checkin { background: #047857; color: #ecfdf5; }
+  .user-input { background: #1e293b; border: 1.5px solid #334155; border-radius: 14px; color: #f1f5f9; font-size: 16px; padding: 14px 16px; width: 100%; appearance: none; margin-bottom: 1.5rem; cursor: pointer; }
+  .user-input:focus { outline: none; border-color: #3b82f6; }
+  .section-label { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; color: #64748b; text-transform: uppercase; margin-bottom: 0.75rem; }
+  .assigned-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .assigned-item { background: #1e293b; border: 1.5px solid #334155; border-radius: 14px; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+  .assigned-item:hover { background: #273549; border-color: #475569; }
+  .assigned-item.selected { border-color: #10b981; background: #064e3b22; }
+  .assigned-left { display: flex; align-items: center; gap: 12px; }
+  .assigned-icon { font-size: 22px; }
+  .assigned-name { font-size: 15px; font-weight: 600; }
+  .assigned-brand { font-size: 12px; color: #64748b; }
+  .check-circle { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #334155; display: flex; align-items: center; justify-content: center; font-size: 13px; color: transparent; transition: all 0.15s; }
+  .assigned-item.selected .check-circle { background: #10b981; border-color: #10b981; color: white; }
+  .next-btn { margin-top: 1.5rem; width: 100%; padding: 16px; border: none; border-radius: 14px; background: #047857; color: #ecfdf5; font-size: 17px; font-weight: 700; cursor: pointer; opacity: 0.4; transition: opacity 0.15s; }
+  .next-btn.enabled { opacity: 1; }
+  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 1rem; color: #64748b; font-size: 15px; }
+  .spinner { width: 40px; height: 40px; border: 3px solid #1e293b; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-msg { background: #450a0a; border: 1.5px solid #7f1d1d; border-radius: 14px; padding: 1rem 1.25rem; color: #fca5a5; font-size: 14px; margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">IT Department</div>
+  <h1>Asset Kiosk</h1>
+</div>
+
+<div class="screen active" id="screen-home">
+  <p class="home-subtitle">What would you like to do?</p>
+  <div class="home-btns">
+    <button class="home-btn btn-checkout" onclick="startCheckout()">
+      <div class="icon">📤</div>Check Out
+    </button>
+    <button class="home-btn btn-checkin" onclick="startCheckin()">
+      <div class="icon">📥</div>Check In
+    </button>
+  </div>
+</div>
+
+<div class="screen" id="screen-loading">
+  <div class="loading">
+    <div class="spinner"></div>
+    <span id="loading-msg">Loading...</span>
+  </div>
+</div>
+
+<div class="screen" id="screen-co-user">
+  <div class="step-header">
+    <button class="back-btn" onclick="goHome()">&#8592;</button>
+    <div><div class="step-title">Who are you?</div><div class="step-subtitle">Select your name to continue</div></div>
+  </div>
+  <p class="section-label">Select your name</p>
+  <select class="user-input" id="co-user-select" onchange="coUserSelected()">
+    <option value="">-- Select your name --</option>
+  </select>
+  <p class="section-label">Select item type</p>
+  <div class="grid" id="co-item-grid"></div>
+</div>
+
+<div class="screen" id="screen-co-brand">
+  <div class="step-header">
+    <button class="back-btn" onclick="showScreen('screen-co-user')">&#8592;</button>
+    <div><div class="step-title" id="co-brand-title">Select Brand</div><div class="step-subtitle">Choose the brand you need</div></div>
+  </div>
+  <div class="grid" id="co-brand-grid"></div>
+</div>
+
+<div class="screen" id="screen-ci-user">
+  <div class="step-header">
+    <button class="back-btn" onclick="goHome()">&#8592;</button>
+    <div><div class="step-title">Who are you?</div><div class="step-subtitle">Select your name to see your items</div></div>
+  </div>
+  <p class="section-label">Select your name</p>
+  <select class="user-input" id="ci-user-select" onchange="ciUserSelected()">
+    <option value="">-- Select your name --</option>
+  </select>
+  <div id="ci-assigned-wrap" style="display:none;">
+    <p class="section-label">Your checked-out items</p>
+    <div class="assigned-list" id="ci-assigned-list"></div>
+    <button class="next-btn" id="ci-next-btn" onclick="goToCheckinConfirm()">Continue</button>
+  </div>
+  <div id="ci-none-msg" style="display:none; color:#64748b; font-size:14px; margin-top:1rem;">No items currently checked out to you.</div>
+</div>
+
+<div class="screen" id="screen-confirm">
+  <div class="confirm-card">
+    <div class="confirm-icon" id="conf-icon">📤</div>
+    <div class="confirm-title" id="conf-title">Confirm</div>
+    <div class="confirm-detail" id="conf-detail">Please review the details below</div>
+    <div id="conf-rows"></div>
+    <div id="conf-error"></div>
+    <div class="confirm-btns">
+      <button class="btn-cancel" id="conf-cancel-btn">Cancel</button>
+      <button class="btn-confirm" id="conf-proceed-btn" onclick="doConfirm()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-success">
+  <div class="success-wrap">
+    <div class="success-circle" id="succ-circle">✓</div>
+    <div class="success-title" id="succ-title">Done!</div>
+    <div class="success-msg" id="succ-msg"></div>
+    <button class="done-btn" id="succ-btn" onclick="goHome()">Back to Home</button>
+  </div>
+</div>
+
+<script>
+const MIDDLEWARE = "https://script.google.com/macros/s/AKfycbw8DaVCz90vj16WyKRwZuxO7CS9EZW_-J4a5-xdY2HKNQam1v4SrRPm8BTPrFvadruG/exec";
+
+const ICONS = { "keyboard":"⌨️","mouse":"🖱️","headset":"🎧","headphone":"🎧","webcam":"📷","camera":"📷","dock":"🔌","docking":"🔌","hub":"🔀","usb":"🔀","monitor":"🖥️","cable":"🔋","charger":"🔋","adapter":"🔌","speaker":"🔊","default":"📦" };
+
+function getIcon(name) {
+  const n = (name || "").toLowerCase();
+  for (const [k,v] of Object.entries(ICONS)) { if (n.includes(k)) return v; }
+  return ICONS.default;
+}
+
+let state = { mode:null, user:null, userId:null, item:null, brand:null, accessory:null, selectedReturn:null };
+let snipeUsers = [];
+let snipeAccessories = [];
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goHome() {
+  state = { mode:null, user:null, userId:null, item:null, brand:null, accessory:null, selectedReturn:null };
+  showScreen('screen-home');
+}
+
+function loading(msg) {
+  document.getElementById('loading-msg').textContent = msg || 'Loading...';
+  showScreen('screen-loading');
+}
+
+async function apiFetch(params) {
+  const url = MIDDLEWARE + '?' + new URLSearchParams(params);
+  const res = await fetch(url, { redirect: 'follow' });
+  return res.json();
+}
+
+async function loadData() {
+  loading('Connecting to Snipe-IT...');
+  try {
+    const [uRes, aRes] = await Promise.all([apiFetch({action:'getUsers'}), apiFetch({action:'getAccessories'})]);
+    snipeUsers = (uRes.rows || []).filter(u => u.activated);
+    snipeAccessories = (aRes.rows || []);
+  } catch(e) { snipeUsers = []; snipeAccessories = []; }
+}
+
+function populateUserSelect(id) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = '<option value="">-- Select your name --</option>';
+  snipeUsers.forEach(u => {
+    const o = document.createElement('option');
+    o.value = u.id; o.textContent = u.name; o.dataset.name = u.name;
+    sel.appendChild(o);
+  });
+}
+
+function groupByCategory() {
+  const g = {};
+  snipeAccessories.forEach(a => {
+    const cat = a.category ? a.category.name : 'Other';
+    if (!g[cat]) g[cat] = [];
+    g[cat].push(a);
+  });
+  return g;
+}
+
+async function startCheckout() {
+  state.mode = 'checkout';
+  await loadData();
+  populateUserSelect('co-user-select');
+  document.getElementById('co-user-select').value = '';
+  document.getElementById('co-item-grid').innerHTML = '';
+  showScreen('screen-co-user');
+}
+
+function coUserSelected() {
+  const sel = document.getElementById('co-user-select');
+  state.userId = sel.value ? parseInt(sel.value) : null;
+  state.user = sel.value ? sel.options[sel.selectedIndex].dataset.name : null;
+  const grid = document.getElementById('co-item-grid');
+  grid.innerHTML = '';
+  if (!sel.value) return;
+  const groups = groupByCategory();
+  Object.entries(groups).forEach(([cat, accessories]) => {
+    const stock = accessories.reduce((a,b) => a + (b.remaining_qty || 0), 0);
+    const el = document.createElement('div');
+    el.className = 'card-btn';
+    const sc = stock === 0 ? 'out' : stock <= 3 ? 'low' : '';
+    const sl = stock === 0 ? 'Out of stock' : stock + ' available';
+    el.innerHTML = `<div class="card-icon">${getIcon(cat)}</div><div class="card-name">${cat}</div><div class="card-stock ${sc}">${sl}</div>`;
+    if (stock > 0) el.onclick = () => selectCategory(cat, accessories);
+    else el.style.opacity = '0.4';
+    grid.appendChild(el);
+  });
+}
+
+function selectCategory(cat, accessories) {
+  state.item = cat;
+  document.getElementById('co-brand-title').textContent = 'Select ' + cat;
+  const grid = document.getElementById('co-brand-grid');
+  grid.innerHTML = '';
+  accessories.forEach(a => {
+    const stock = a.remaining_qty || 0;
+    const el = document.createElement('div');
+    el.className = 'card-btn';
+    const sc = stock === 0 ? 'out' : stock <= 2 ? 'low' : '';
+    const sl = stock === 0 ? 'Out of stock' : stock + ' in stock';
+    el.innerHTML = `<div class="card-icon">${getIcon(cat)}</div><div class="card-name">${a.name}</div><div class="card-stock ${sc}">${sl}</div>`;
+    if (stock > 0) {
+      el.onclick = () => { state.accessory = a; state.brand = a.name; showCheckoutConfirm(); };
+    } else el.style.opacity = '0.4';
+    grid.appendChild(el);
+  });
+  showScreen('screen-co-brand');
+}
+
+function showCheckoutConfirm() {
+  document.getElementById('conf-icon').textContent = '📤';
+  document.getElementById('conf-title').textContent = 'Confirm Check Out';
+  document.getElementById('conf-detail').textContent = 'Please review before confirming';
+  document.getElementById('conf-error').innerHTML = '';
+  document.getElementById('conf-rows').innerHTML = `
+    <div class="confirm-row"><span class="label">User</span><span class="val">${state.user}</span></div>
+    <div class="confirm-row"><span class="label">Item</span><span class="val">${getIcon(state.item)} ${state.item}</span></div>
+    <div class="confirm-row"><span class="label">Brand / Model</span><span class="val">${state.brand}</span></div>
+    <div class="confirm-row"><span class="label">Stock after</span><span class="val">${(state.accessory.remaining_qty || 1) - 1} remaining</span></div>
+  `;
+  document.getElementById('conf-cancel-btn').onclick = () => showScreen('screen-co-brand');
+  const pb = document.getElementById('conf-proceed-btn');
+  pb.className = 'btn-confirm checkout-confirm';
+  pb.textContent = 'Confirm Check Out';
+  pb.disabled = false;
+  showScreen('screen-confirm');
+}
+
+async function startCheckin() {
+  state.mode = 'checkin';
+  await loadData();
+  populateUserSelect('ci-user-select');
+  document.getElementById('ci-user-select').value = '';
+  document.getElementById('ci-assigned-wrap').style.display = 'none';
+  document.getElementById('ci-none-msg').style.display = 'none';
+  showScreen('screen-ci-user');
+}
+
+async function ciUserSelected() {
+  const sel = document.getElementById('ci-user-select');
+  state.userId = sel.value ? parseInt(sel.value) : null;
+  state.user = sel.value ? sel.options[sel.selectedIndex].dataset.name : null;
+  state.selectedReturn = null;
+  const wrap = document.getElementById('ci-assigned-wrap');
+  const noneMsg = document.getElementById('ci-none-msg');
+  if (!sel.value) { wrap.style.display='none'; noneMsg.style.display='none'; return; }
+  loading('Loading your items...');
+  try {
+    const res = await apiFetch({ action:'getUserAccessories', userId: state.userId });
+    const assigned = res.rows || [];
+    showScreen('screen-ci-user');
+    if (assigned.length === 0) {
+      wrap.style.display = 'none';
+      noneMsg.style.display = 'block';
+      noneMsg.textContent = 'No items currently checked out to you.';
+      return;
+    }
+    noneMsg.style.display = 'none';
+    const list = document.getElementById('ci-assigned-list');
+    list.innerHTML = '';
+    assigned.forEach(itm => {
+      const el = document.createElement('div');
+      el.className = 'assigned-item';
+      const cat = itm.category ? itm.category.name : itm.name;
+      el.innerHTML = `<div class="assigned-left"><div class="assigned-icon">${getIcon(cat)}</div><div><div class="assigned-name">${itm.name}</div><div class="assigned-brand">${cat}</div></div></div><div class="check-circle">✓</div>`;
+      el.onclick = () => {
+        document.querySelectorAll('.assigned-item').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+        state.selectedReturn = itm;
+        document.getElementById('ci-next-btn').classList.add('enabled');
+      };
+      list.appendChild(el);
+    });
+    wrap.style.display = 'block';
+    document.getElementById('ci-next-btn').classList.remove('enabled');
+  } catch(e) {
+    showScreen('screen-ci-user');
+    noneMsg.textContent = 'Could not load items. Please try again.';
+    noneMsg.style.display = 'block';
+  }
+}
+
+async function goToCheckinConfirm() {
+  if (!state.selectedReturn) return;
+  const pivotId = state.selectedReturn.assigned_pivot_id;
+  const accessoryId = state.selectedReturn.id;
+  document.getElementById('conf-icon').textContent = '📥';
+  document.getElementById('conf-title').textContent = 'Confirm Return';
+  document.getElementById('conf-detail').textContent = 'Please confirm you are returning this item';
+  document.getElementById('conf-error').innerHTML = '';
+  document.getElementById('conf-rows').innerHTML = `
+    <div class="confirm-row"><span class="label">User</span><span class="val">${state.user}</span></div>
+    <div class="confirm-row"><span class="label">Item</span><span class="val">${state.selectedReturn.name}</span></div>
+    <div class="confirm-row"><span class="label">Accessory ID</span><span class="val">${accessoryId}</span></div>
+    <div class="confirm-row"><span class="label">Pivot ID</span><span class="val">${pivotId}</span></div>
+  `;
+  document.getElementById('conf-cancel-btn').onclick = () => showScreen('screen-ci-user');
+  const pb = document.getElementById('conf-proceed-btn');
+  pb.className = 'btn-confirm checkin-confirm';
+  pb.textContent = 'Confirm Return';
+  pb.disabled = false;
+  showScreen('screen-confirm');
+}
+
+async function doConfirm() {
+  const pb = document.getElementById('conf-proceed-btn');
+  pb.disabled = true;
+  pb.textContent = 'Processing...';
+  document.getElementById('conf-error').innerHTML = '';
+  try {
+    let res;
+    if (state.mode === 'checkout') {
+      res = await apiFetch({ action:'checkout', accessoryId: state.accessory.id, userId: state.userId });
+    } else {
+      res = await apiFetch({ action:'checkin', accessoryId: state.selectedReturn.id, checkinId: state.selectedReturn.assigned_pivot_id });
+    }
+    if (res.status === 'error') {
+      const msg = typeof res.messages === 'object' ? JSON.stringify(res.messages) : (res.messages || 'Something went wrong.');
+      document.getElementById('conf-error').innerHTML = `<div class="error-msg">${msg}</div>`;
+      pb.disabled = false;
+      pb.textContent = state.mode === 'checkout' ? 'Confirm Check Out' : 'Confirm Return';
+      return;
+    }
+    const c = document.getElementById('succ-circle');
+    if (state.mode === 'checkout') {
+      c.textContent = '✓'; c.className = 'success-circle checkout';
+      document.getElementById('succ-title').textContent = 'Checked Out!';
+      document.getElementById('succ-msg').textContent = state.brand + ' has been assigned to ' + state.user + ' in Snipe-IT.';
+      document.getElementById('succ-btn').className = 'done-btn checkout';
+    } else {
+      c.textContent = '✓'; c.className = 'success-circle checkin';
+      document.getElementById('succ-title').textContent = 'Checked In!';
+      document.getElementById('succ-msg').textContent = state.selectedReturn.name + ' has been returned. Thank you, ' + state.user + '!';
+      document.getElementById('succ-btn').className = 'done-btn checkin';
+    }
+    showScreen('screen-success');
+  } catch(e) {
+    document.getElementById('conf-error').innerHTML = `<div class="error-msg">Connection error. Please check your network and try again.</div>`;
+    pb.disabled = false;
+    pb.textContent = state.mode === 'checkout' ? 'Confirm Check Out' : 'Confirm Return';
+  }
+}
+</script>
+</body>
+</html>
